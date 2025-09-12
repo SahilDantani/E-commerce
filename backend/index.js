@@ -44,7 +44,7 @@ const upload = multer({
 
 // Serve images from S3
 app.get('/images/:key(*)', (req, res) => {
-  const key = req.path.replace(/^\/images\//, "");
+  const key = req.params.key;
   const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
   const stream = s3.getObject(params).createReadStream();
   stream.on("error", (err) => {
