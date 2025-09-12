@@ -16,21 +16,9 @@ app.use(cors());
 const port = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-app.use('/images',express.static('upload/images'))
+// app.use('/images',express.static('upload/images'))
 
-// Databas connection with mongodb
-
-const conn = mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('Connected to MongoDB'))
-.catch((error) => console.error('Error connecting to MongoDB:', error));
-
-// Api creation
-
-app.get('/',(req,res)=>{
-    res.send("Express is running")
-})
-
-// Image storage Engine
+// image storage engine
 
 /*Initialize S3 client*/
 const s3 = new AWS.S3({
@@ -54,11 +42,30 @@ const upload = multer({
   })
 });
 
-app.use('/images', (req, res) => {
-  const key = req.path.substring(1); // remove leading slash
+// Serve images from S3
+app.get("/images/*", (req, res) => {
+  const key = req.path.replace(/^\/images\//, "");
   const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
-  s3.getObject(params).createReadStream().pipe(res);
+  const stream = s3.getObject(params).createReadStream();
+  stream.on("error", (err) => {
+    console.error("S3 stream error:", err);
+    res.status(404).send("Image not found");
+  });
+  stream.pipe(res);
 });
+
+
+// Databas connection with mongodb
+
+const conn = mongoose.connect(process.env.MONGODB_URI)
+.then(() => console.log('Connected to MongoDB'))
+.catch((error) => console.error('Error connecting to MongoDB:', error));
+
+// Api creation
+
+app.get('/',(req,res)=>{
+    res.send("Express is running")
+})
 
 
 // const storage = multer.diskStorage({
