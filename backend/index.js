@@ -3,6 +3,8 @@ const express = require("express");
 const app = express();
 
 const mongoose = require("mongoose");
+const AWS = require('aws-sdk');
+const multerS3 = require('multer-s3');
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require('path');
@@ -30,22 +32,51 @@ app.get('/',(req,res)=>{
 
 // Image storage Engine
 
-const storage = multer.diskStorage({
-    destination:'upload/images',
-    filename:(req,file,cb)=>{
-        return cb(null,`${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
-    }
-})
+/*Initialize S3 client*/
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
 
-const upload = multer({storage:storage})
+/* multer with s3*/
+
+const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    acl: 'public-read',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const filename = `images/${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`;
+      cb(null, filename);
+    }
+  })
+});
+
+app.use('/images', (req, res) => {
+  const key = req.path.substring(1); // remove leading slash
+  const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
+  s3.getObject(params).createReadStream().pipe(res);
+});
+
+
+// const storage = multer.diskStorage({
+//     destination:'upload/images',
+//     filename:(req,file,cb)=>{
+//         return cb(null,`${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
+//     }
+// })
+// const upload = multer({storage:storage})
+
+
 
 // Creating upload Endpoint for 
 
 app.post('/upload',upload.single('product'),(req,res)=>{
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
         success:1,
-        image_url:`${baseUrl}/images/${req.file.filename}`
+        image_url:req.file.location
     })
 });
 
