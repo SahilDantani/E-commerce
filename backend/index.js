@@ -61,7 +61,7 @@ app.post('/upload', (req, res) => {
 
 
 // Serve images from S3
-app.get('/images/*', (req, res) => {
+app.get('/images/*path', (req, res) => {
   const key = req.params[0]; // wildcard catch-all
   const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
   const stream = s3.getObject(params).createReadStream();
