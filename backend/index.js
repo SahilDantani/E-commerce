@@ -8,6 +8,20 @@ const cors = require('cors');
 const path = require('path');
 const jwt = require("jsonwebtoken");
 const app = express();
+
+// CORS Configuration - IMPORTANT: Add your deployed domains
+const corsOptions = {
+  origin: [
+    'https://ecommerce-admin-sred.onrender.com',
+    'https://ecommerce-client-fvsa.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:5173',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'auth-token', 'Accept']
+};
+
 app.use(express.json());
 app.use(cors());
 
@@ -23,46 +37,62 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
 });
 
-/* multer with s3*/
-
+// Multer with S3 configuration
 const upload = multer({
   storage: multerS3({
     s3,
     bucket: process.env.S3_BUCKET_NAME,
-    acl: 'public-read',
+    acl: 'public-read',//removed?
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       const filename = `images/${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`;
       cb(null, filename);
     }
-  })
+  }),
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 
+  }
 });
 
 // Creating upload Endpoint for 
 
-
-app.post('/upload', (req, res) => {
-  app.post('/upload', (req, res) => {
-  upload.single('product')(req, res, err => {
-    if (err) {
-      console.error('Upload error:', err);
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ success: 0, error: err.message });
-      }
-      return res.status(500).json({ success: 0, error: err.message });
-    }
+app.post('/upload', upload.single('product'), (req, res) => {
+  try {
     if (!req.file) {
-      return res.status(400).json({ success: 0, error: 'No file uploaded' });
+      return res.status(400).json({ 
+        success: 0, 
+        error: 'No file uploaded' 
+      });
     }
-    res.json({ success: 1, image_url: req.file.location });
-  });
-});
+    
+    res.json({ 
+      success: 1, 
+      image_url: req.file.location 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      success: 0, 
+      error: error.message 
+    });
+  }
 });
 
 
-// Serve images from S3
-app.get('/images/*', (req, res) => {
-  const key = req.params[0]; // wildcard catch-all
+// Serve images from S3-removed?
+app.get('/images/*path', (req, res) => {
+  const key = req.params.path;
   const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
   const stream = s3.getObject(params).createReadStream();
   stream.on('error', err => {
@@ -296,18 +326,23 @@ app.post('/getcart',fetchUser,async(req,res)=>{
     let userData = await Users.findOne({_id:req.user.id});
     res.json(userData.cartData);
 })
-// error handling middleware
-// app.use((err, req, res, next) => {
-//     console.error('Unhandled error:', err);
-    
-//     // Send JSON error response instead of HTML
-//     res.status(500).json({
-//         success: 0,
-//         error: 'Internal server error',
-//         message: err.message
-//     });
-// });
-
+// Error handling middleware
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: 0,
+        error: 'File too large'
+      });
+    }
+  }
+  
+  console.error('Server error:', error);
+  res.status(500).json({
+    success: 0,
+    error: error.message || 'Internal server error'
+  });
+});
 
 app.listen(port,(err)=>{
     if(!err){
