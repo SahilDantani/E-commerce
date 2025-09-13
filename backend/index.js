@@ -1,22 +1,18 @@
+require('dotenv').config()
 const express = require("express");
-
-const app = express();
-
 const mongoose = require("mongoose");
 const AWS = require('aws-sdk');
-const multerS3 = require('multer-s3');
-const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const path = require('path');
+const multerS3 = require('multer-s3');
 const cors = require('cors');
-require('dotenv').config()
+const path = require('path');
+const jwt = require("jsonwebtoken");
+const app = express();
 app.use(express.json());
 app.use(cors());
 
 const port = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET;
-
-// app.use('/images',express.static('upload/images'))
 
 // image storage engine
 
@@ -42,14 +38,36 @@ const upload = multer({
   })
 });
 
+// Creating upload Endpoint for 
+
+
+app.post('/upload', (req, res) => {
+  app.post('/upload', (req, res) => {
+  upload.single('product')(req, res, err => {
+    if (err) {
+      console.error('Upload error:', err);
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ success: 0, error: err.message });
+      }
+      return res.status(500).json({ success: 0, error: err.message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: 0, error: 'No file uploaded' });
+    }
+    res.json({ success: 1, image_url: req.file.location });
+  });
+});
+});
+
+
 // Serve images from S3
-app.get('/images/*path', (req, res) => {
-  const key = req.params.path;
+app.get('/images/*', (req, res) => {
+  const key = req.params[0]; // wildcard catch-all
   const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
   const stream = s3.getObject(params).createReadStream();
-  stream.on("error", (err) => {
-    console.error("S3 stream error:", err);
-    res.status(404).send("Image not found");
+  stream.on('error', err => {
+    console.error('S3 stream error:', err);
+    res.status(404).send('Image not found');
   });
   stream.pipe(res);
 });
@@ -66,63 +84,6 @@ const conn = mongoose.connect(process.env.MONGODB_URI)
 app.get('/',(req,res)=>{
     res.send("Express is running")
 })
-
-
-// const storage = multer.diskStorage({
-//     destination:'upload/images',
-//     filename:(req,file,cb)=>{
-//         return cb(null,`${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
-//     }
-// })
-// const upload = multer({storage:storage})
-
-
-
-// Creating upload Endpoint for 
-
-// app.post('/upload',upload.single('product'),(req,res)=>{
-//     res.json({
-//         success:1,
-//         image_url:req.file.location
-//     })
-// });
-app.post('/upload', (req, res) => {
-    // Use multer upload with error handling
-    upload.single('product')(req, res, (err) => {
-        if (err) {
-            console.error('Multer/S3 upload error:', err);
-            
-            // Handle specific multer errors
-            if (err instanceof multer.MulterError) {
-                return res.status(400).json({
-                    success: 0,
-                    error: `Upload error: ${err.message}`
-                });
-            }
-            
-            // Handle S3 or other errors
-            return res.status(500).json({
-                success: 0,
-                error: `Server error: ${err.message}`
-            });
-        }
-        
-        // Check if file was uploaded
-        if (!req.file) {
-            return res.status(400).json({
-                success: 0,
-                error: 'No file uploaded'
-            });
-        }
-        
-        // Success response
-        console.log('File uploaded successfully:', req.file.location);
-        res.json({
-            success: 1,
-            image_url: req.file.location
-        });
-    });
-});
 
 // Schema for crating products
 
@@ -336,16 +297,16 @@ app.post('/getcart',fetchUser,async(req,res)=>{
     res.json(userData.cartData);
 })
 // error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
+// app.use((err, req, res, next) => {
+//     console.error('Unhandled error:', err);
     
-    // Send JSON error response instead of HTML
-    res.status(500).json({
-        success: 0,
-        error: 'Internal server error',
-        message: err.message
-    });
-});
+//     // Send JSON error response instead of HTML
+//     res.status(500).json({
+//         success: 0,
+//         error: 'Internal server error',
+//         message: err.message
+//     });
+// });
 
 
 app.listen(port,(err)=>{
