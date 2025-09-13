@@ -80,11 +80,48 @@ app.get('/',(req,res)=>{
 
 // Creating upload Endpoint for 
 
-app.post('/upload',upload.single('product'),(req,res)=>{
-    res.json({
-        success:1,
-        image_url:req.file.location
-    })
+// app.post('/upload',upload.single('product'),(req,res)=>{
+//     res.json({
+//         success:1,
+//         image_url:req.file.location
+//     })
+// });
+app.post('/upload', (req, res) => {
+    // Use multer upload with error handling
+    upload.single('product')(req, res, (err) => {
+        if (err) {
+            console.error('Multer/S3 upload error:', err);
+            
+            // Handle specific multer errors
+            if (err instanceof multer.MulterError) {
+                return res.status(400).json({
+                    success: 0,
+                    error: `Upload error: ${err.message}`
+                });
+            }
+            
+            // Handle S3 or other errors
+            return res.status(500).json({
+                success: 0,
+                error: `Server error: ${err.message}`
+            });
+        }
+        
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: 0,
+                error: 'No file uploaded'
+            });
+        }
+        
+        // Success response
+        console.log('File uploaded successfully:', req.file.location);
+        res.json({
+            success: 1,
+            image_url: req.file.location
+        });
+    });
 });
 
 // Schema for crating products
@@ -298,6 +335,17 @@ app.post('/getcart',fetchUser,async(req,res)=>{
     let userData = await Users.findOne({_id:req.user.id});
     res.json(userData.cartData);
 })
+// error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    
+    // Send JSON error response instead of HTML
+    res.status(500).json({
+        success: 0,
+        error: 'Internal server error',
+        message: err.message
+    });
+});
 
 
 app.listen(port,(err)=>{
