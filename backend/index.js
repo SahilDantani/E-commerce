@@ -89,20 +89,6 @@ app.post('/upload', upload.single('product'), (req, res) => {
   }
 });
 
-
-// Serve images from S3-removed?
-app.get('/images/*path', (req, res) => {
-  const key = req.params.path;
-  const params = { Bucket: process.env.S3_BUCKET_NAME, Key: key };
-  const stream = s3.getObject(params).createReadStream();
-  stream.on('error', err => {
-    console.error('S3 stream error:', err);
-    res.status(404).send('Image not found');
-  });
-  stream.pipe(res);
-});
-
-
 // Databas connection with mongodb
 
 const conn = mongoose.connect(process.env.MONGODB_URI)
