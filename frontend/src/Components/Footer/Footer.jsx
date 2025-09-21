@@ -6,6 +6,7 @@ import pintester_icon from '../Assets/pintester_icon.png'
 import whatsapp_icon from '../Assets/whatsapp_icon.png'
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
   return (
     <div className='footer'>
         <div className="footer-logo">
@@ -32,7 +33,7 @@ const Footer = () => {
         </div>
         <div className="footer-copyright">
             <hr />
-            <p>Copyright @ 2025 - All Right Reserve</p>
+            <p>Copyright @ {currentYear} - All Right Reserve</p>
         </div>
     </div>
   )

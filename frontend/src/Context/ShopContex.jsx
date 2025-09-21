@@ -1,7 +1,6 @@
 import React, { createContext, useEffect, useState } from 'react'
 const API_URL = process.env.REACT_APP_API_URL;
 
-
 export const ShopContext = createContext(null);
 
   const getDefaultCart = ()=>{
@@ -17,7 +16,7 @@ const ShopContextProvider = (props)=>{
 
     const [all_product,setAll_Product] = useState([]);
     const[cartItems,setCartItems] = useState(getDefaultCart());
-
+    
     useEffect(()=>{
         fetch(`${API_URL}/allproducts`)
         .then((response)=>response.json())
