@@ -1,0 +1,31 @@
+.orange-dots-spinner {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  margin: 50px auto;
+}
+.orange-dots-spinner .dot {
+  --dot-size: 8px;
+  --radius: 22px;
+  position: absolute;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  background: orange;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform:
+    rotate(calc(var(--i) * 45deg))
+    translate(var(--radius))
+    scale(1);
+  animation: dot-scale 1s cubic-bezier(0.4,0,0.2,1) infinite;
+  animation-delay: calc(var(--i) * 0.12s);
+  transform-origin: center center;
+}
+@keyframes dot-scale {
+  0%, 100% { transform: rotate(var(--angle)) translate(var(--radius)) scale(1); }
+  50% { transform: rotate(var(--angle)) translate(var(--radius)) scale(1.7); }
+}
+.orange-dots-spinner .dot {
+  --angle: calc(var(--i) * 45deg);
+}
