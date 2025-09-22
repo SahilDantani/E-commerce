@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, forwardRef } from 'react'
 import './NewCollections.css'
 import Item from '../Item/Item'
 const API_URL = process.env.REACT_APP_API_URL;
 
 
-const NewCollections = () => {
+const NewCollections = forwardRef((props, ref) => {
 
   const [new_collection,setNew_collection] = useState([]);
 
@@ -14,7 +14,7 @@ const NewCollections = () => {
   },[])
 
   return (
-    <div className='new-collections'>
+    <div className='new-collections' ref={ref}>
         <h1>NEW COLLECTIONS</h1>
         <hr />
         <div className="collections">
@@ -24,6 +24,6 @@ const NewCollections = () => {
         </div>
     </div>
   )
-}
+})
 
 export default NewCollections

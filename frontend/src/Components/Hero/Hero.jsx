@@ -4,7 +4,7 @@ import hand_icon from '../Assets/hand_icon.png'
 import arrow_icon from '../Assets/arrow.png'
 import hero_image from '../Assets/hero_image.png'
 
-const Hero = () => {
+const Hero = ({scrollToNewCollections}) => {
   return (
     <div className='hero'>
         <div className="hero-left">
@@ -17,7 +17,7 @@ const Hero = () => {
                 <p>collections</p>
                 <p>for everyone</p>
             </div>
-            <div className="hero-latest-btn">
+            <div className="hero-latest-btn" onClick={scrollToNewCollections} style={{cursor:'pointer'}}>
                 <div>Latest Collection</div>
                 <img src={arrow_icon} alt="" />
             </div>
