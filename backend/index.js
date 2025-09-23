@@ -287,6 +287,57 @@ const fetchUser = async (req,res,next)=>{
     }
 }
 
+// Order Schema
+const Order = mongoose.model('Order', {
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
+  order_id: { type: String, required: true, unique: true },
+  items: [{
+    product_id: Number,
+    quantity: Number,
+    size: String,
+    product_price: Number
+  }],
+  total_price: Number,
+  user_details: {
+    name: String,
+    email: String,
+    mobile: String,
+    address: String
+  },
+  order_date: { type: Date, default: Date.now }
+});
+
+// Place Order Endpoint
+app.post('/order', fetchUser, async (req, res) => {
+  try {
+    const { user } = req;
+    const { items, total_price, user: userDetails } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items in order' });
+    }
+    const order_id = 'ORD' + Date.now();
+    const order = new Order({
+      user_id: user.id,
+      order_id,
+      items,
+      total_price,
+      user_details: userDetails
+    });
+    await order.save();
+    // Optionally, clear user's cart
+    await Users.findOneAndUpdate({ _id: user.id }, { cartData: {} });
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get all orders (for admin)
+app.get('/orders', async (req, res) => {
+  const orders = await Order.find({}).sort({ order_date: -1 });
+  res.json(orders);
+});
+
 // creating endpoint for adding products in cartData
 app.post('/addtocart',fetchUser,async(req,res)=>{
     let userData = await Users.findOne({_id:req.user.id});
