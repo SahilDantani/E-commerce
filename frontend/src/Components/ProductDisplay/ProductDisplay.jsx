@@ -1,12 +1,24 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import './ProductDisplay.css'
 import star_icon from '../Assets/star_icon.png'
 import star_dull_icon from '../Assets/star_dull_icon.png'
 import { ShopContext } from '../../Context/ShopContex'
 
+const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+
 const ProductDisplay = (props) => {
   const {product} = props;
   const {addToCart} = useContext(ShopContext);
+  const [selectedSize, setSelectedSize] = useState('M');
+
+  const handleSizeSelect = (size)=>{
+    setSelectedSize(size);
+  };
+
+  const handleAddToCart = ()=>{
+    addToCart(product.id, selectedSize);
+  };
+
   return (
     <div className='productdisplay'>
       <div className="productdisplay-left">
@@ -44,14 +56,21 @@ const ProductDisplay = (props) => {
         <div className="productdisplay-right-size">
           <h1>Select Size</h1>
           <div className="productdisplay-right-sizes">
-            <div>S</div>
-            <div>M</div>
-            <div>L</div>
-            <div>XL</div>
-            <div>XXL</div>
+            {sizes.map(size => (
+              <div
+                key={size}
+                onClick={() => handleSizeSelect(size)}
+                style={{
+                  border: selectedSize === size ? '2px solid #ff4141' : '1px solid #ebebeb',
+                  background: selectedSize === size ? '#ffeaea' : '#fbfbfb'
+                }}
+              >
+                {size}
+              </div>
+            ))}
           </div>
         </div>
-        <button onClick={()=>{addToCart(product.id)}}>ADD TO CARD</button>
+        <button onClick={handleAddToCart}>ADD TO CARD</button>
         <p className='productdisplay-right-category'><span>Category :</span>{product.category}</p>
         <p className='productdisplay-right-category'><span>Tags :</span>Modern, Latest</p>
       </div>
