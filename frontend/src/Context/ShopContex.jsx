@@ -5,15 +5,10 @@ export const ShopContext = createContext(null);
 
   const getDefaultCart = ()=>{
         let cart = {};
-        for (let index = 0; index < 301; index++) {
-            cart[index] = null;
-        }
         return cart;
     }
 
 const ShopContextProvider = (props)=>{
-
-
     const [all_product,setAll_Product] = useState([]);
     const[cartItems,setCartItems] = useState(getDefaultCart());
     
@@ -32,23 +27,21 @@ const ShopContextProvider = (props)=>{
                 },
                 body:'',
             }).then((response)=>response.json()).then((data)=>{
-                setCartItems(data);
+                setCartItems(data||{});
             });
         }
     },[])
 
     const addToCart = (itemId, size='M')=>{
-        setCartItems((prev)=>{
-      const prevEntry = prev[itemId];
-      if (prevEntry && prevEntry.size === size) {
-        // Same size, just increment quantity
-        return {...prev, [itemId]: { quantity: prevEntry.quantity + 1, size }};
-      } else {
-        // New or different size, overwrite with new size and quantity 1
-        return {...prev, [itemId]: { quantity: 1, size }};
-      }
-    });
-    // Backend call can be adapted if you want to store size as well
+      const key =`${itemId}_${size}`;
+      setCartItems((prev)=>{
+            const prevEntry = prev[key];
+            if (prevEntry) {
+                return {...prev, [key]: { ...prevEntry, quantity: prevEntry.quantity + 1 }};
+            } else {
+                return {...prev, [key]: { quantity: 1, size, itemId }};
+            }
+        });
     if(localStorage.getItem('auth-token')){
       fetch(`${API_URL}/addtocart`,{
         method:'POST',
@@ -65,15 +58,18 @@ const ShopContextProvider = (props)=>{
     }
     
     
-    const removeFromCart = (itemId)=>{
+    const removeFromCart = (itemId, size='M')=>{
+    const key = `${itemId}_${size}`;
     setCartItems((prev)=>{
-      const prevEntry = prev[itemId];
-      if (prevEntry && prevEntry.quantity > 1) {
-        return {...prev, [itemId]: { ...prevEntry, quantity: prevEntry.quantity - 1 }};
-      } else {
-        return {...prev, [itemId]: null};
-      }
-    });
+            const prevEntry = prev[key];
+            if (prevEntry && prevEntry.quantity > 1) {
+                return {...prev, [key]: { ...prevEntry, quantity: prevEntry.quantity - 1 }};
+            } else {
+                const newCart = {...prev};
+                delete newCart[key];
+                return newCart;
+            }
+        });
     if(localStorage.getItem('auth-token')){
       fetch(`${API_URL}/removefromcart`,{
         method:'POST',
@@ -82,7 +78,7 @@ const ShopContextProvider = (props)=>{
           'auth-token':`${localStorage.getItem('auth-token')}`,
           'Content-Type':'application/json',
         },
-        body:JSON.stringify({'itemId':itemId}),
+        body:JSON.stringify({'itemId':itemId, size}),
       })
       .then((response)=>response.json())
       .then((data)=>console.log(data));
@@ -91,24 +87,25 @@ const ShopContextProvider = (props)=>{
 
     const getTotalCartAmount = ()=>{
     let totalAmount=0;
-    for(const item in cartItems){
-      const entry = cartItems[item];
-      if(entry && entry.quantity > 0){
-        let itemInfo = all_product.find((product)=>product.id===Number(item));
-        totalAmount += itemInfo.new_price * entry.quantity;
-      }
-    }
-    return totalAmount; 
+    for(const key in cartItems){
+            const entry = cartItems[key];
+            if(entry && entry.quantity > 0){
+                let itemInfo = all_product.find((product)=>product.id===Number(entry.itemId));
+                if(itemInfo)
+                    totalAmount += itemInfo.new_price * entry.quantity;
+            }
+        }
+    return totalAmount;
   }
 
     const getTotalCartItems = ()=>{
     let totalItem = 0;
-    for(const item in cartItems){
-      const entry = cartItems[item];
-      if(entry && entry.quantity > 0){
-        totalItem+=entry.quantity;
-      }
-    }
+    for(const key in cartItems){
+            const entry = cartItems[key];
+            if(entry && entry.quantity > 0){
+                totalItem+=entry.quantity;
+            }
+        }
     return totalItem;
   }
 

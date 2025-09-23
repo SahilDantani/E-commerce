@@ -214,9 +214,6 @@ app.post('/signup',async(req,res)=>{
         return res.status(400).json({sucess:false,errors:"existing user found with same email address"});
     }
     let cart = {};
-    for (let i=0;i<300;i++){
-        cart[i]=0;
-    }
     const user = new Users({
         name:req.body.username,
         email:req.body.email,
@@ -293,25 +290,42 @@ const fetchUser = async (req,res,next)=>{
 // creating endpoint for adding products in cartData
 app.post('/addtocart',fetchUser,async(req,res)=>{
     let userData = await Users.findOne({_id:req.user.id});
-    userData.cartData[req.body.itemId]+=1;
-    await Users.findOneAndUpdate({_id:req.user.id},{cartData:userData.cartData});
-    res.send("Added")
+    const { itemId, size = 'M' } = req.body;
+    let cart = userData.cartData || {};
+
+    const key = `${itemId}_${size}`;
+
+    if (!cart[key]) {
+        cart[key] = { quantity: 1, size, itemId };
+    } else {
+        cart[key].quantity += 1;
+    }
+
+    await Users.findOneAndUpdate({_id:req.user.id},{cartData:cart});
+    res.json({success:true,cartData:cart})
 })
 
 // creating endpoint to remove product from cartData
 app.post('/removefromcart',fetchUser,async(req,res)=>{
     let userData = await Users.findOne({_id:req.user.id});
-    if(userData.cartData[req.body.itemId]>0)
-    userData.cartData[req.body.itemId]-=1;
-    await Users.findOneAndUpdate({_id:req.user.id},{cartData:userData.cartData});
-    res.send("Removed")
+    const {itemId, size = 'M'} = req.body;
+    let cart = userData.cartData || {};
+
+    const key = `${itemId}_${size}`;
+    if (cart[key] && cart[key].quantity > 1) {
+        cart[key].quantity -= 1;
+    } else {
+        delete cart[key];
+    }
+    await Users.findOneAndUpdate({_id:req.user.id},{cartData:cart});
+    res.json({success:true,cartData:cart});
 })
 
 // creating endpoint to get cartdata
-app.post('/getcart',fetchUser,async(req,res)=>{
-    let userData = await Users.findOne({_id:req.user.id});
+app.post('/getcart', fetchUser, async (req, res) => {
+    let userData = await Users.findOne({ _id: req.user.id });
     res.json(userData.cartData);
-})
+});
 // Error handling middleware
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {

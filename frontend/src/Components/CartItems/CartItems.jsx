@@ -17,26 +17,37 @@ const CartItems = () => {
             <p>Remove</p>
         </div>
         <hr />
-        {all_product.map((e)=>{
-        const entry = cartItems[e.id];
-        if(entry && entry.quantity > 0){
-          return (
-            <div key={e.id}>
-              <div className="cartitems-format cartitems-format-main">
-                <img src={e.image} alt="" className="carticon-product-icon" />
-                <p>{e.name}</p>
-                <p>{entry.size || 'M'}</p>
-                <p>${e.new_price}</p>
-                <button className="cartitems-quantity">{entry.quantity}</button>
-                <p>${e.new_price * entry.quantity}</p>
-                <img className='cartitems-remove-icon' src={remove_icon} onClick={()=>{removeFromCart(e.id)}} alt="" />
-              </div>
-              <hr />
-            </div>
-          );
-        }
-        return null;
-      })}
+        {Object.values(cartItems).map((entry, idx) => {
+                if(entry && entry.quantity > 0){
+                    const e = all_product.find(p => p.id === Number(entry.itemId));
+                    if(!e) return null;
+                    return (
+                        <div key={entry.itemId + '_' + entry.size}>
+                            <div className="cartitems-format cartitems-format-main">
+                                <img src={e.image} alt="" className="carticon-product-icon" />
+                                <p>{e.name}</p>
+                                <p>{entry.size || 'M'}</p>
+                                <p>${e.new_price}</p>
+                                <button className="cartitems-quantity">{entry.quantity}</button>
+                                <p>${e.new_price * entry.quantity}</p>
+                                <img className='cartitems-remove-icon' src={remove_icon} onClick={()=>{removeFromCart(entry.itemId, entry.size)}} alt="" />
+                                {/* <p style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    ${e.new_price * entry.quantity}
+                                    <img
+                                        className='cartitems-remove-icon'
+                                        src={remove_icon}
+                                        onClick={()=>{removeFromCart(entry.itemId, entry.size)}}
+                                        alt=""
+                                        style={{ margin: 0 }}
+                                    />
+                                </p> */}
+                            </div>
+                            <hr />
+                        </div>
+                    );
+                }
+                return null;
+            })}
         <div className="cartitems-down">
             <div className="cartitems-total">
                 <h1>cart Totals</h1>
